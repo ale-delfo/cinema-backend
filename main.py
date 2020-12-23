@@ -18,7 +18,7 @@ def get_all_food():
     cursor = cnx.cursor()
     cursor.execute("SELECT * FROM food ")
     food_list = []
-    for (food_id, title, ingredients, image, price, calories, description) in cursor:
+    for (food_id, title, ingredients, image, price, calories, description, size, cat) in cursor:
         food_dict = dict()
         food_dict['id'] = food_id
         food_dict['title'] = title
@@ -27,6 +27,8 @@ def get_all_food():
         food_dict['price'] = price
         food_dict['calories'] = calories
         food_dict['description'] = description
+        food_dict['size'] = size
+        food_dict['cat'] = cat
         food_list.append(food_dict)
 
     return jsonify(food_list), 200
