@@ -10,6 +10,9 @@ steps:
   - name: building-image
     commands:
       - docker build -t backend:latest .
+  - name: running-image
+    commands:
+      - docker-compose -f /home/shared/conf_files/docker-compose.yml up -d
 
 trigger:
   branch: 
