@@ -58,13 +58,14 @@ def get_all_drinks():
     return jsonify(food_list), 200
 
 
+
 @app.route('/api/ping', methods=['GET'])
 def ping():
-    return_values = dict()
-    return_values["host"] = database_host
-    return_values["username"] = database_username
-    return_values["password"] = database_password
-    return jsonify(return_values), 200
-
+    # return_values = dict()
+    # return_values["host"] = database_host
+    # return_values["username"] = database_username
+    # return_values["password"] = database_password
+    # return jsonify(return_values), 200
+    return "ping", 200
 
 app.run(host='0.0.0.0')
