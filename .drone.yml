@@ -9,7 +9,7 @@ platform:
 steps:
   - name: building-image
     commands:
-      - docker build -t backend:0.0.1 .
+      - docker build -t backend:latest .
 
 trigger:
   branch: 
