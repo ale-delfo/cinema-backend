@@ -2,12 +2,41 @@ from flask import Flask
 from flask import jsonify
 import os
 import mysql.connector
+import firebase_admin
+from firebase_admin import auth
+from flask_httpauth import HTTPTokenAuth
+from firebase_admin import credentials
 
+cred = credentials.Certificate("config/cinema-food-firebase-adminsdk-dskp9-98ba81129d.json")
+firebase_admin.initialize_app(cred)
+
+class User:
+    def __init__(self, email, uid):
+        pass
+
+
+authorization = HTTPTokenAuth(scheme='Bearer')
 database_host = os.environ['MYSQL_HOST']
 database_username = os.environ['MYSQL_USERNAME']
 database_password = os.environ['MYSQL_PASS']
 
 app = Flask("Cinema Backend")
+
+
+@authorization.verify_token
+def verify_token(token):
+    try:
+        decoded_token = auth.verify_id_token(token)
+        return decoded_token
+    except auth.InvalidIdTokenError:
+        pass
+
+
+
+@app.route('/api/restricted')
+@authorization.login_required
+def restricted_api():
+    return authorization.current_user()
 
 
 @app.route('/api/food/getall', methods=['GET'])
