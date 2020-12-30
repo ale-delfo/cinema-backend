@@ -10,6 +10,7 @@ from firebase_admin import credentials
 cred = credentials.Certificate("config/cinema-food-firebase-adminsdk-dskp9-98ba81129d.json")
 firebase_admin.initialize_app(cred)
 
+
 class User:
     def __init__(self, email, uid):
         pass
@@ -40,6 +41,7 @@ def restricted_api():
 
 
 @app.route('/api/food/getall', methods=['GET'])
+@authorization.login_required
 def get_all_food():
     cnx = mysql.connector.connect(user=database_username, password=database_password,
                                   host=database_host,
@@ -64,6 +66,7 @@ def get_all_food():
 
 
 @app.route('/api/food/getdrinks', methods=['GET'])
+@authorization.login_required
 def get_all_drinks():
     cnx = mysql.connector.connect(user=database_username, password=database_password,
                                   host=database_host,
