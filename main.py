@@ -25,19 +25,17 @@ app = Flask("Cinema Backend")
 
 @authorization.verify_token
 def verify_token(token):
-    return token
-    # try:
-    #     decoded_token = auth.verify_id_token(token)
-    #     return decoded_token
-    # except auth.InvalidIdTokenError:
-    #     pass
+    try:
+        decoded_token = auth.verify_id_token(token)
+        return decoded_token['uid']
+    except auth.InvalidIdTokenError:
+        pass
 
 
 
 @app.route('/api/restricted')
 @authorization.login_required
 def restricted_api():
-    print(authorization.current_user())
     return authorization.current_user()
 
 
