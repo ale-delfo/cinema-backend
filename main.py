@@ -25,11 +25,12 @@ app = Flask("Cinema Backend")
 
 @authorization.verify_token
 def verify_token(token):
-    try:
-        decoded_token = auth.verify_id_token(token)
-        return decoded_token
-    except auth.InvalidIdTokenError:
-        pass
+    return token
+    # try:
+    #     decoded_token = auth.verify_id_token(token)
+    #     return decoded_token
+    # except auth.InvalidIdTokenError:
+    #     pass
 
 
 
