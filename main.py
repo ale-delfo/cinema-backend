@@ -25,7 +25,6 @@ app = Flask("Cinema Backend")
 
 @authorization.verify_token
 def verify_token(token):
-    print(token)
     return token
     # try:
     #     decoded_token = auth.verify_id_token(token)
@@ -38,6 +37,7 @@ def verify_token(token):
 @app.route('/api/restricted')
 @authorization.login_required
 def restricted_api():
+    print(authorization.current_user())
     return authorization.current_user()
 
 
