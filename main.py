@@ -50,6 +50,16 @@ def add_product_to_cart():
     return jsonify(response), 200
 
 
+@app.route('/api/cart/removeproduct', methods=['POST'])
+@authorization.login_required
+def remove_product_from_cart():
+    response = dict()
+    response['uid'] = authorization.current_user()
+    response['productId'] = request.form.get('productId')
+    response['status'] = 'success'
+    return jsonify(response), 200
+
+
 @app.route('/api/food/getall', methods=['GET'])
 @authorization.login_required
 def get_all_food():
