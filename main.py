@@ -1,5 +1,6 @@
 from flask import Flask
 from flask import jsonify
+from flask import request
 import os
 import mysql.connector
 import firebase_admin
@@ -33,11 +34,20 @@ def verify_token(token):
         pass
 
 
-
 @app.route('/api/restricted')
 @authorization.login_required
 def restricted_api():
     return authorization.current_user()
+
+
+@app.route('/api/cart/addproduct', methods=['POST'])
+@authorization.login_required
+def add_product_to_cart():
+    response = dict()
+    response['uid'] = authorization.current_user()
+    response['productId'] = request.form.get('productId')
+    response['status'] = 'success'
+    return jsonify(response), 200
 
 
 @app.route('/api/food/getall', methods=['GET'])
