@@ -83,7 +83,7 @@ def remove_product_from_cart():
     return jsonify(response), 200
 
 
-@app.route('/api/cart/getcart', methods=['POST'])
+@app.route('/api/cart/getcart', methods=['GET'])
 #@authorization.login_required
 def get_user_cart():
     uid = request.form.get('uid')  # cambiare con id preso da token
