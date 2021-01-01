@@ -84,9 +84,10 @@ def remove_product_from_cart():
 
 
 @app.route('/api/cart/getcart', methods=['GET'])
-#@authorization.login_required
+@authorization.login_required
 def get_user_cart():
-    uid = request.form.get('uid')  # cambiare con id preso da token
+    #uid = request.form.get('uid')  # cambiare con id preso da token
+    uid = authorization.current_user()
     uid = f'"{uid}"'
     conn = dbc.DatabaseConnector(host, user, passw)
     conn.connect()
