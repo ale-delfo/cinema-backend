@@ -2,27 +2,31 @@ from flask import Flask
 from flask import jsonify
 from flask import request
 import os
-import mysql.connector
+from utils import DatabaseConnector as dbc
 import firebase_admin
 from firebase_admin import auth
 from flask_httpauth import HTTPTokenAuth
 from firebase_admin import credentials
+import logging
+
+logging.basicConfig(level=logging.DEBUG)
 
 cred = credentials.Certificate("config/cinema-food-firebase-adminsdk-dskp9-98ba81129d.json")
 firebase_admin.initialize_app(cred)
-
-
-class User:
-    def __init__(self, email, uid):
-        pass
-
-
 authorization = HTTPTokenAuth(scheme='Bearer')
-database_host = os.environ['MYSQL_HOST']
-database_username = os.environ['MYSQL_USERNAME']
-database_password = os.environ['MYSQL_PASS']
 
 app = Flask("Cinema Backend")
+
+host = os.environ['MYSQL_HOST']
+user = os.environ['MYSQL_USERNAME']
+passw = os.environ['MYSQL_PASS']
+
+
+def create_cart(uid):
+    conn = dbc.DatabaseConnector(host, user, passw)
+    conn.connect()
+    conn.query(f'INSERT INTO cart (Customer_ID,totalDue,status) VALUES ({uid},0.0,\'PENDING\')')
+    conn.close()
 
 
 @authorization.verify_token
@@ -43,10 +47,29 @@ def restricted_api():
 @app.route('/api/cart/addproduct', methods=['POST'])
 @authorization.login_required
 def add_product_to_cart():
+    productid = request.form.get('productId')
+    #uid = request.form.get('uid') #cambiare con id preso da token
+    #uid = f'"{uid}"'
+    uid = authorization.current_user()
+    uid = f'"{uid}"'
+    conn = dbc.DatabaseConnector(host, user, passw)
     response = dict()
-    response['uid'] = authorization.current_user()
     response['productId'] = request.form.get('productId')
-    response['status'] = 'success'
+    try:
+        conn.connect()
+        cartid = conn.query(f'SELECT Cart_ID from cart WHERE Customer_ID = {uid} AND status = \'PENDING\'')
+        logging.debug('Last statement: '+conn.getstatement())
+        if len(cartid) == 0:
+            create_cart(uid)
+            cartid = conn.query(f'SELECT SQL_NO_CACHE Cart_ID from cart WHERE Customer_ID = {uid} AND status = \'PENDING\'')
+        logging.debug(f'After {cartid}')
+        cartid = cartid[0][0]
+        conn.query(f'INSERT INTO cart_item (Product_ID,Cart_ID) VALUES ({productid},{cartid})')
+        conn.close()
+        response['status'] = 'success'
+    except Exception as e:
+        logging.debug(e)
+        response['status'] = 'fail'
     return jsonify(response), 200
 
 
@@ -60,16 +83,49 @@ def remove_product_from_cart():
     return jsonify(response), 200
 
 
-@app.route('/api/food/getall', methods=['GET'])
-@authorization.login_required
-def get_all_food():
-    cnx = mysql.connector.connect(user=database_username, password=database_password,
-                                  host=database_host,
-                                  database='Cinema')
-    cursor = cnx.cursor()
-    cursor.execute("SELECT * FROM food ")
+@app.route('/api/cart/getcart', methods=['POST'])
+#@authorization.login_required
+def get_user_cart():
+    uid = request.form.get('uid')  # cambiare con id preso da token
+    uid = f'"{uid}"'
+    conn = dbc.DatabaseConnector(host, user, passw)
+    conn.connect()
+    query = conn.query(f'\
+    SELECT product.Product_ID, title, ingredients, image, price, calories, description, size, cat\
+    FROM product \
+    JOIN \
+    (SELECT Product_ID \
+     FROM cart\
+     JOIN cart_item ON cart_item.Cart_ID = cart.Cart_ID\
+    WHERE Customer_ID = {uid}) T \
+    ON T.Product_ID = product.Product_ID;')
+    conn.close()
     food_list = []
-    for (food_id, title, ingredients, image, price, calories, description, size, cat) in cursor:
+    for (food_id, title, ingredients, image, price, calories, description, size, cat) in query:
+        food_dict = dict()
+        food_dict['id'] = food_id
+        food_dict['title'] = title
+        food_dict['ingredients'] = ingredients
+        food_dict['image'] = image
+        food_dict['price'] = price
+        food_dict['calories'] = calories
+        food_dict['description'] = description
+        food_dict['size'] = size
+        food_dict['cat'] = cat
+        food_list.append(food_dict)
+
+    return jsonify(food_list), 200
+
+
+@app.route('/api/food/getall', methods=['GET'])
+#@authorization.login_required
+def get_all_food():
+    conn = dbc.DatabaseConnector(host, user, passw)
+    conn.connect()
+    query = conn.query('SELECT * FROM product')
+    conn.close()
+    food_list = []
+    for (food_id, title, ingredients, image, price, calories, description, size, cat) in query:
         food_dict = dict()
         food_dict['id'] = food_id
         food_dict['title'] = title
@@ -86,15 +142,14 @@ def get_all_food():
 
 
 @app.route('/api/food/getdrinks', methods=['GET'])
-@authorization.login_required
+#@authorization.login_required
 def get_all_drinks():
-    cnx = mysql.connector.connect(user=database_username, password=database_password,
-                                  host=database_host,
-                                  database='Cinema')
-    cursor = cnx.cursor()
-    cursor.execute("SELECT * FROM food WHERE cat = 'DRINK'")
+    conn = dbc.DatabaseConnector(host, user, passw)
+    conn.connect()
+    query = conn.query("SELECT * FROM product WHERE cat = 'DRINK'")
+    conn.close()
     food_list = []
-    for (food_id, title, ingredients, image, price, calories, description, size, cat) in cursor:
+    for (food_id, title, ingredients, image, price, calories, description, size, cat) in query:
         food_dict = dict()
         food_dict['id'] = food_id
         food_dict['title'] = title
