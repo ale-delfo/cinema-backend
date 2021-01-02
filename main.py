@@ -49,9 +49,8 @@ def restricted_api():
 def add_product_to_cart():
     productid = request.form.get('productId')
     #uid = request.form.get('uid') #cambiare con id preso da token
-    #uid = f'"{uid}"'
     uid = authorization.current_user()
-    uid = f'"{uid}"'
+    uid = f'\'{uid}\''
     conn = dbc.DatabaseConnector(host, user, passw)
     response = dict()
     response['productId'] = request.form.get('productId')
@@ -61,7 +60,7 @@ def add_product_to_cart():
         logging.debug('Last statement: '+conn.getstatement())
         if len(cartid) == 0:
             create_cart(uid)
-            cartid = conn.query(f'SELECT SQL_NO_CACHE Cart_ID from cart WHERE Customer_ID = {uid} AND status = \'PENDING\'')
+            cartid = conn.query(f'SELECT Cart_ID from cart WHERE Customer_ID = \'{uid}\' AND status = \'PENDING\'')
         logging.debug(f'After {cartid}')
         cartid = cartid[0][0]
         conn.query(f'INSERT INTO cart_item (Product_ID,Cart_ID) VALUES ({productid},{cartid})')
@@ -76,10 +75,23 @@ def add_product_to_cart():
 @app.route('/api/cart/removeproduct', methods=['POST'])
 @authorization.login_required
 def remove_product_from_cart():
+    productid = request.form.get('productId')
+    #uid = request.form.get('uid')  # cambiare con id preso da token
+    uid = authorization.current_user()
+    conn = dbc.DatabaseConnector(host, user, passw)
     response = dict()
-    response['uid'] = authorization.current_user()
     response['productId'] = request.form.get('productId')
-    response['status'] = 'success'
+    try:
+        conn.connect()
+        cartid = conn.query(f'SELECT Cart_ID from cart WHERE Customer_ID = \'{uid}\' AND status = \'PENDING\'')
+        cartid = cartid[0][0]
+        conn.query(f'DELETE FROM cart_item WHERE Cart_ID = \'{cartid}\' AND Product_ID = {productid} \
+        LIMIT 1')
+        conn.close()
+        response['status'] = 'success'
+    except Exception as e:
+        logging.debug(e)
+        response['status'] = 'fail'
     return jsonify(response), 200
 
 
@@ -88,7 +100,7 @@ def remove_product_from_cart():
 def get_user_cart():
     #uid = request.form.get('uid')  # cambiare con id preso da token
     uid = authorization.current_user()
-    uid = f'"{uid}"'
+    #uid = f'"{uid}"'
     conn = dbc.DatabaseConnector(host, user, passw)
     conn.connect()
     query = conn.query(f'\
@@ -98,7 +110,7 @@ def get_user_cart():
     (SELECT Product_ID \
      FROM cart\
      JOIN cart_item ON cart_item.Cart_ID = cart.Cart_ID\
-    WHERE Customer_ID = {uid}) T \
+    WHERE Customer_ID = \'{uid}\') T \
     ON T.Product_ID = product.Product_ID;')
     conn.close()
     food_list = []
